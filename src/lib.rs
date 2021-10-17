@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, RequestMode, Response, console};
+use web_sys::{console, Request, RequestInit, RequestMode, Response};
 
+mod Mesh;
+mod ObjLoader;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
@@ -19,7 +21,6 @@ pub struct Data {
     pub name: String,
 }
 
-
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen]
 pub fn main_js() -> Result<(), JsValue> {
@@ -28,11 +29,9 @@ pub fn main_js() -> Result<(), JsValue> {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
-
     // Your code goes here!
     // console::log_1(foo()?);
     console::log_1(&"Hello using web-sys".into());
-    
 
     Ok(())
 }
@@ -62,26 +61,17 @@ pub async fn foo() -> Result<(), JsValue> {
     // Ok(JsValue::from_serde(&branch_into).unwrap())
 
     let text: String = JsFuture::from(resp.text()?).await?.into_serde().unwrap();
-    for (idx, line) in text.lines().enumerate() {
-        // let (line, mut words) = match line {
-        //     Ok(ref line) => (line.clone(), line.split_whitespace().filter(|s| !s.is_empty())),
-        //     Err(err) => {
 
-        //     }
-        // };
+    let mut loader = ObjLoader::Loader::new();
 
-        let first = line.split_whitespace().filter(|x| !x.is_empty());
+    loader.parse(&text);
+    let meshes = loader.getMeshes();
 
-        for fff in first {
-            console::log_1(&(fff).into());
-        }
-
-
-        // console::log_1(&(first).into());
-        // console::log_1(&line.into());
-        // console::log_1(&(first.unwrap().to_string()).into());
+    unsafe {
+        // let size = loader.vertices[10].x;
+        // console::log_1(&size.into());
+        // console::log_1(&meshes.len().to_string().into());
     }
-
 
     Ok(())
 }

@@ -3,9 +3,9 @@ import { Game } from "./game";
 
 const foo = import('../../pkg/index').then(x => {
   console.log(x);
-  x.main_js();
+  // x.main_js();
   x.foo().then(x => {
-    // console.log(x);
+    console.log(x);
     
   })
 })
