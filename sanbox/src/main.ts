@@ -11,7 +11,7 @@ const foo = import('../../pkg/index').then(x => {
 })
 
 
-initWebGL("canvas3d");
+// initWebGL("canvas3d");
 
 function main() {
   const game = new Game();
@@ -25,4 +25,4 @@ function main() {
   mainLoop();
 }
 
-main();
+// main();

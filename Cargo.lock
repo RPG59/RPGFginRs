@@ -97,6 +97,7 @@ dependencies = [
  "console_error_panic_hook",
  "futures",
  "js-sys",
+ "lazy_static",
  "serde",
  "serde_derive",
  "wasm-bindgen",

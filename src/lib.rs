@@ -1,11 +1,56 @@
+use js_sys::WebAssembly::Memory;
+use serde::__private::doc;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{console, Request, RequestInit, RequestMode, Response};
+use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlShader, WebGlUniformLocation};
 
 mod Mesh;
 mod ObjLoader;
+
+mod core;
+
+use crate::core::EngineCore::EngineCore;
+use crate::core::Shader::Shader;
+
+mod gl {
+    use wasm_bindgen::JsCast;
+    use web_sys::WebGl2RenderingContext;
+    use web_sys::{console, Request, RequestInit, RequestMode, Response};
+    use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlShader, WebGlUniformLocation};
+
+    fn init() -> WebGl2RenderingContext {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let canvas = document.query_selector("canvas").unwrap().unwrap();
+        let canvas: HtmlCanvasElement = canvas
+            .dyn_into::<HtmlCanvasElement>()
+            .map_err(|_| ())
+            .unwrap();
+
+        let gl = canvas
+            .get_context("webgl2")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<WebGl2RenderingContext>()
+            .map_err(|_| ())
+            .unwrap();
+
+        let width = window.inner_width().unwrap().as_f64().unwrap() as usize;
+        let height = window.inner_height().unwrap().as_f64().unwrap() as usize;
+
+        canvas.set_width(width as u32);
+        canvas.set_height(height as u32);
+
+        gl
+    }
+
+    thread_local! {
+        pub static GL: WebGl2RenderingContext = init();
+    }
+}
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
@@ -36,8 +81,28 @@ pub fn main_js() -> Result<(), JsValue> {
     Ok(())
 }
 
+pub fn initShader() -> Shader {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    let vertex_shader = document
+        .get_element_by_id("vertexShader")
+        .unwrap()
+        .inner_html();
+    let fragment_shader = document
+        .get_element_by_id("fragmentShader")
+        .unwrap()
+        .inner_html();
+
+    console::log_1(&fragment_shader.clone().into());
+
+    Shader::new(vertex_shader, fragment_shader)
+}
+
 #[wasm_bindgen]
 pub async fn foo() -> Result<(), JsValue> {
+    let shader = initShader();
+
     let mut opts = web_sys::RequestInit::new();
     opts.method("GET");
 
@@ -65,13 +130,20 @@ pub async fn foo() -> Result<(), JsValue> {
     let mut loader = ObjLoader::Loader::new();
 
     loader.parse(&text);
-    let meshes = loader.getMeshes();
 
-    unsafe {
-        // let size = loader.vertices[10].x;
-        // console::log_1(&size.into());
-        // console::log_1(&meshes.len().to_string().into());
+    let mut meshes = loader.getMeshes();
+
+    shader.enable();
+
+    for mesh in meshes {
+        mesh.render(&shader);
     }
+
+    // unsafe {
+    // let size = loader.vertices[10].x;
+    // console::log_1(&size.into());
+    // console::log_1(&meshes.len().to_string().into());
+    // }
 
     Ok(())
 }

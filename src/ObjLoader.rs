@@ -316,12 +316,7 @@ impl Loader {
                 vn.push(normal.z);
             }
 
-            meshes.push(Mesh {
-                indices,
-                vertices,
-                normals: vn,
-                texCoords: vt,
-            })
+            meshes.push(Mesh::new(vertices, indices, vn, vt));
         }
 
         meshes
