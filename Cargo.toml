@@ -20,11 +20,12 @@ lto = true
 # to interact with JavaScript.
 wasm-bindgen = { version = "0.2.76", features = ["serde-serialize"]  }
 wasm-bindgen-futures = "0.4.26"
-cgmath = "0.17"
 js-sys = "0.3.53"
 serde = {version = "1.0.130", features = ["derive"] }
 serde_derive = "1.0.130"
 lazy_static = "1.4.0"
+cgmath = "0.18.0"
+
 
 
 # `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size

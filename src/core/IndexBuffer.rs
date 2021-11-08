@@ -1,4 +1,4 @@
-use crate::gl::GL;
+use crate::GL;
 use wasm_bindgen::JsCast;
 use web_sys::{WebGl2RenderingContext, WebGlBuffer};
 
@@ -8,7 +8,7 @@ pub struct IndexBuffer {
 
 impl IndexBuffer {
     pub fn new(data: Vec<u32>, usage: u32) -> Self {
-        GL.with(|gl| {
+        let gl = GL.context.borrow();
             let buffer = gl.create_buffer().unwrap();
 
             gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&buffer));
@@ -28,16 +28,14 @@ impl IndexBuffer {
             );
 
             IndexBuffer { buffer }
-        })
     }
 
     pub fn bind(&self) {
-        GL.with(|gl| {
+        let gl = GL.context.borrow();
             gl.bind_buffer(
                 WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
                 Some(&self.buffer),
             )
-        })
     }
 
     pub fn unbind(&self) {

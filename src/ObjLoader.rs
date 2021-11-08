@@ -6,6 +6,13 @@ use web_sys::console;
 
 use crate::Mesh::Mesh;
 
+pub struct LoaderMesh {
+    indices: Vec<u32>,
+    vertices: Vec<f32>,
+    vt: Vec<f32>,
+    vn: Vec<f32>,
+}
+
 pub struct Vec3<T> {
     pub x: T,
     pub y: T,
@@ -316,7 +323,7 @@ impl Loader {
                 vn.push(normal.z);
             }
 
-            meshes.push(Mesh::new(vertices, indices, vn, vt));
+            meshes.push(Mesh::new(vertices, indices, vt, vn));
         }
 
         meshes

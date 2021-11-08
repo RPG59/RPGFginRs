@@ -1,4 +1,4 @@
-use crate::gl::GL;
+use crate::GL;
 use web_sys::{WebGl2RenderingContext, WebGlVertexArrayObject};
 
 use crate::core::{IndexBuffer::IndexBuffer, Shader::Shader, StaticBuffer::StaticBuffer};
@@ -17,9 +17,9 @@ impl Mesh {
         texCoords: Vec<f32>,
         normals: Vec<f32>,
     ) -> Mesh {
-        GL.with(|gl| {
+            let gl = GL.context.borrow();
             let VAO = gl.create_vertex_array().unwrap();
-            // gl.bind_vertex_array(Some(&VAO));
+            gl.bind_vertex_array(Some(&VAO));
 
             let VBO = StaticBuffer::new(vertices, WebGl2RenderingContext::STATIC_DRAW);
 
@@ -41,14 +41,10 @@ impl Mesh {
                 IBO,
                 VAO,
             }
-        })
     }
     pub fn render(self, shader: &Shader) {
-        GL.with(|gl| {
-            gl.clear_color(255., 0., 0., 0.);
-            // gl.bind_vertex_array(Some(&self.VAO));
-            self.VBO.bind();
-            self.IBO.bind();
+            let gl = GL.context.borrow();
+            gl.bind_vertex_array(Some(&self.VAO));
 
             gl.draw_elements_with_i32(
                 WebGl2RenderingContext::TRIANGLES,
@@ -56,6 +52,5 @@ impl Mesh {
                 WebGl2RenderingContext::UNSIGNED_INT,
                 0,
             )
-        })
     }
 }

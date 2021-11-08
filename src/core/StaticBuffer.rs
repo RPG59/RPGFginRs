@@ -1,4 +1,4 @@
-use crate::gl::GL;
+use crate::GL;
 use web_sys::{WebGl2RenderingContext, WebGlBuffer};
 
 pub struct StaticBuffer {
@@ -7,18 +7,17 @@ pub struct StaticBuffer {
 
 impl StaticBuffer {
     pub fn new(data: Vec<f32>, usage: u32) -> Self {
-        GL.with(|gl| {
+        let gl = GL.context.borrow();
             let buffer = StaticBuffer {
                 buffer: gl.create_buffer().unwrap(),
             };
             buffer.set_data(data, usage);
 
             buffer
-        })
     }
 
     pub fn bind(&self) {
-        GL.with(|gl| gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.buffer)))
+        GL.context.borrow().bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.buffer));
     }
 
     pub fn unbind(&self) {
@@ -27,6 +26,7 @@ impl StaticBuffer {
 
     fn set_data(&self, data: Vec<f32>, usage: u32) {
         use wasm_bindgen::JsCast;
+        let gl = GL.context.borrow();
         self.bind();
         let memory_buffer = wasm_bindgen::memory()
             .dyn_into::<js_sys::WebAssembly::Memory>()
@@ -36,13 +36,11 @@ impl StaticBuffer {
         let array = js_sys::Float32Array::new(&memory_buffer)
             .subarray(data_location, data_location + data.len() as u32);
 
-        GL.with(|gl| {
             gl.buffer_data_with_array_buffer_view(
                 WebGl2RenderingContext::ARRAY_BUFFER,
                 &array,
                 usage,
-            )
-        });
+            );
 
         self.unbind();
     }
