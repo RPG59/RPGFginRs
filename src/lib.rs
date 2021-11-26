@@ -1,5 +1,6 @@
-use ObjLoader::LoaderMesh;
+use cgmath::Point3;
 use serde::{Deserialize, Serialize};
+use std::lazy::Lazy;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
@@ -7,7 +8,7 @@ use web_sys::Document;
 use web_sys::WebGl2RenderingContext;
 use web_sys::{console, Request, RequestInit, RequestMode, Response};
 use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlShader, WebGlUniformLocation};
-use cgmath::{Point3};
+use ObjLoader::LoaderMesh;
 
 mod Mesh;
 mod ObjLoader;
@@ -36,55 +37,52 @@ lazy_static! {
 
         m
     };
-
     static ref COUNT: usize = HASHMAP.len();
 }
 
 struct WebGLContext {
-    context: RefCell<WebGl2RenderingContext>
+    context: RefCell<WebGl2RenderingContext>,
 }
 
 unsafe impl Sync for WebGLContext {}
 unsafe impl Send for WebGLContext {}
+unsafe impl Sync for WebGl2RenderingContext {}
 
 pub fn init_context() -> WebGl2RenderingContext {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-            let canvas = document.query_selector("canvas").unwrap().unwrap();
-            let canvas: HtmlCanvasElement = canvas
-                .dyn_into::<HtmlCanvasElement>()
-                .map_err(|_| ())
-                .unwrap();
-            
-            canvas.set_width(CANVAS_SIZE.width);
-            canvas.set_height(CANVAS_SIZE.height);
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let canvas = document.query_selector("canvas").unwrap().unwrap();
+    let canvas: HtmlCanvasElement = canvas
+        .dyn_into::<HtmlCanvasElement>()
+        .map_err(|_| ())
+        .unwrap();
 
-            let gl = canvas
-                .get_context("webgl2")
-                .unwrap()
-                .unwrap()
-                .dyn_into::<WebGl2RenderingContext>()
-                .map_err(|_| ())
-                .unwrap();
+    canvas.set_width(CANVAS_SIZE.width);
+    canvas.set_height(CANVAS_SIZE.height);
 
-                gl
+    let gl = canvas
+        .get_context("webgl2")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<WebGl2RenderingContext>()
+        .map_err(|_| ())
+        .unwrap();
+
+    gl
 }
 
 struct Canvas_size {
     width: u32,
-    height: u32
+    height: u32,
 }
 
 fn get_canvas_size() -> Canvas_size {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
-        let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let width = window.inner_width().unwrap().as_f64().unwrap() as u32;
+    let height = window.inner_height().unwrap().as_f64().unwrap() as u32;
 
-        Canvas_size{
-            width,
-            height
-        }
+    Canvas_size { width, height }
 }
 
 lazy_static! {
@@ -95,11 +93,12 @@ lazy_static! {
     // };
     static ref CANVAS_SIZE: Canvas_size = get_canvas_size();
 
-    static ref GL: WebGLContext = WebGLContext{
-        context: RefCell::new(init_context())
-
-        // HashMap::new()
-    };
+    // static ref GL: WebGLContext = WebGLContext{
+    //     context: RefCell::new(init_context())
+    // };
+    static ref GL: Lazy<WebGl2RenderingContext> = Lazy::new(||{
+        init_context()
+    });
 
         // let window = web_sys::window().unwrap();
         // let document = window.document().unwrap();
@@ -113,7 +112,7 @@ lazy_static! {
         //         .dyn_into::<HtmlCanvasElement>()
         //         .map_err(|_| ())
         //         .unwrap();
-            
+
         //     canvas.set_width(WIDTH as u32);
         //     canvas.set_height(HEIGHT as u32);
 
@@ -159,8 +158,6 @@ lazy_static! {
 //             .dyn_into::<WebGl2RenderingContext>()
 //             .map_err(|_| ())
 //             .unwrap();
-
-
 
 //         gl
 //         }
@@ -220,20 +217,19 @@ pub fn initShader() -> Shader {
 
 struct foo_bar {
     size: u32,
-    data: Vec<f32>
+    data: Vec<f32>,
 }
 
 #[wasm_bindgen]
 pub fn getVertices() -> *mut u8 {
-    let data = Box::new(foo_bar{
+    let data = Box::new(foo_bar {
         size: 3,
-        data: vec!(2.234, 3.66, 4.6)
+        data: vec![2.234, 3.66, 4.6],
     });
 
-    let ptr =  Box::into_raw(data);
+    let ptr = Box::into_raw(data);
 
     ptr as *mut u8
-
 }
 
 #[wasm_bindgen]
@@ -266,14 +262,13 @@ pub async fn foo() -> Result<JsValue, JsValue> {
 
     let mut loader = ObjLoader::Loader::new();
 
-
     loader.parse(&text);
 
     let mut meshes = loader.getMeshes();
 
     shader.enable();
     // let vertices: Vec<f32> = vec!(
-    //     -1., -1., 0., 
+    //     -1., -1., 0.,
     //     1., 1., 0.,
     //      1., -1., 0.,
     //      -1., 1., 0.,);
@@ -282,20 +277,24 @@ pub async fn foo() -> Result<JsValue, JsValue> {
 
     // let _m = Mesh::Mesh::new(vertices, indices, Vec::new(), Vec::new());
 
-    let mut camera = core::Camera::Camera::new(std::f32::consts::PI / 2.0, (CANVAS_SIZE.width / CANVAS_SIZE.height) as f32, 0.1, 10.,Point3::new(0., 0., -1.));
-
+    let mut camera = core::Camera::Camera::new(
+        std::f32::consts::PI / 2.0,
+        (CANVAS_SIZE.width / CANVAS_SIZE.height) as f32,
+        0.1,
+        10.,
+        Point3::new(0., 0., -1.),
+    );
 
     camera.update_proj_matrix();
     // let porj_matrix = camera.get_proj_matrix();
-
 
     shader.set_uniform_matrix4f(&"u_projMatrix".to_string(), &camera.get_proj_matrix());
     shader.set_uniform_matrix4f(&"u_viewMatrix".to_string(), &camera.get_view_matrix());
 
     let gl = GL.context.borrow();
-        console::log_1(&"12341234".to_string().into());
-        gl.clear_color(0., 1., 0., 1.);
-        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    console::log_1(&"12341234".to_string().into());
+    gl.clear_color(0., 1., 0., 1.);
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
     // _m.render(&shader);
 
