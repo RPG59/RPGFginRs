@@ -57,40 +57,40 @@ struct EventBus {
 
 impl EventBus {
     pub fn init(&self) {
-        let (sender, receiver) = futures::sync::mpsc::unbounded();
-        let foo = Ref {
-            data: std::cell::Cell::new(12.0),
-        };
+        // let (sender, receiver) = futures::sync::mpsc::unbounded();
+        // let foo = Ref {
+        //     data: std::cell::Cell::new(12.0),
+        // };
 
-        println!("{}", foo.data.get());
+        // println!("{}", foo.data.get());
 
-        let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            self.publish(&MouseEvent {
-                eventType: EventType::MouseDown,
-                x: event.offset_x(),
-                y: event.offset_y(),
-            });
-        }) as Box<dyn FnMut(_)>);
+        // let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+        //     self.publish(&MouseEvent {
+        //         eventType: EventType::MouseDown,
+        //         x: event.offset_x(),
+        //         y: event.offset_y(),
+        //     });
+        // }) as Box<dyn FnMut(_)>);
 
-        let window = web_sys::window().unwrap();
-        window.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref());
+        // let window = web_sys::window().unwrap();
+        // window.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref());
     }
 
-    pub fn subscribe(&mut self, eventType: EventType, subscriber: &T) {
-        if let Some(handlerList) = self.subscribers.get(&eventType) {
-            handlerList.push(subscriber);
-        } else {
-            self.subscribers.insert(eventType, vec![subscriber]);
-        }
-    }
+    // pub fn subscribe(&mut self, eventType: EventType, subscriber: &T) {
+    //     if let Some(handlerList) = self.subscribers.get(&eventType) {
+    //         handlerList.push(subscriber);
+    //     } else {
+    //         self.subscribers.insert(eventType, vec![subscriber]);
+    //     }
+    // }
 
-    pub fn publish(&self, event: &Event) {
-        if let Some(handlerList) = self.subscribers.get(&event.getEventType()) {
-            for handler in handlerList.iter() {
-                handler.exec();
-            }
-        }
-    }
+    // pub fn publish(&self, event: &Event) {
+    //     if let Some(handlerList) = self.subscribers.get(&event.getEventType()) {
+    //         for handler in handlerList.iter() {
+    //             handler.exec();
+    //         }
+    //     }
+    // }
 
     // pub fn detach(&mut self, subscriber: &'a T) {
     //   let index = self.subscribers.iter().position(|x| *x == subscriber );

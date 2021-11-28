@@ -26,6 +26,30 @@ export class Raycast {
     return this.calculateIntersections(objects);
   }
 
+  calculateIntersection(mesh) {
+    const useWasm = false;
+    const intersections = [];
+
+    if (useWasm) {
+      // @ts-ignore
+      return window._globalWasm.raycast(mesh.vertices, new Float32Array([this.rayOrigin.x, this.rayOrigin.y, this.rayOrigin.z]), new Float32Array([this.rayDirection.x, this.rayDirection.y, this.rayDirection.z]));
+    }
+
+    for (let i = 0; i < mesh.vertices.length; i += 9) {
+      const { vertices } = mesh;
+      const a = new vec3(vertices[i + 0], vertices[i + 1], vertices[i + 2]);
+      const b = new vec3(vertices[i + 3], vertices[i + 4], vertices[i + 5]);
+      const c = new vec3(vertices[i + 6], vertices[i + 7], vertices[i + 8]);
+      const intersection = this.rayTriangleIntersection(a, b, c);
+
+      if(intersection) {
+        intersections.push(intersection);
+      }
+    }
+
+    return intersections;
+  }
+
   calculateIntersections(objects: RenderableObject[]): IIntersection[] {
     const intersections = [];
     let rIndex = 0;
@@ -39,24 +63,14 @@ export class Raycast {
           continue;
         }
 
-        for (let i = 0; i < mesh.vertices.length; i += 9) {
-          const { vertices } = mesh;
-          const a = new vec3(vertices[i + 0], vertices[i + 1], vertices[i + 2]);
-          const b = new vec3(vertices[i + 3], vertices[i + 4], vertices[i + 5]);
-          const c = new vec3(vertices[i + 6], vertices[i + 7], vertices[i + 8]);
-          const intersection = this.rayTriangleIntersection(a, b, c);
-
-          if (intersection) {
-            intersections.push(intersection);
-          }
-        }
+        intersections.push(...this.calculateIntersection(mesh));
       }
     }
 
     return intersections;
   }
 
-  rayTriangleIntersection(v0, v1, v2): IIntersection {
+  rayTriangleIntersection(v0: vec3, v1: vec3, v2: vec3): IIntersection {
     const edge0 = vec3.sub(v1, v0);
     const edge1 = vec3.sub(v2, v0);
     const N = vec3.normalize(vec3.cross(edge0, edge1));

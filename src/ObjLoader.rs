@@ -2,9 +2,9 @@ use core::panic;
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::{net::Incoming, str::SplitWhitespace};
-use web_sys::console;
-
-use crate::Mesh::Mesh;
+use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{console, WebGl2RenderingContext, WebGlBuffer};
 
 pub struct LoaderMesh {
     indices: Vec<u32>,
@@ -282,7 +282,7 @@ impl Loader {
         }
     }
 
-    pub fn getMeshes(self) -> Vec<Mesh> {
+    pub fn getMeshes(&self) -> js_sys::Array {
         const POSITION_SIZE: usize = 3;
         const TEX_POSITION_SIZE: usize = 2;
 
@@ -290,9 +290,9 @@ impl Loader {
             console::log_1(&"GET_MESHES".to_string().into());
         }
 
-        let mut meshes: Vec<Mesh> = Vec::new();
+        let mut meshes = js_sys::Array::new();
 
-        for object in self.objects {
+        for object in &self.objects {
             let indices_len = object.borrow().indices.len() as usize;
             let tex_indices_len = object.borrow().tex_indeces.len() as usize;
 
@@ -323,9 +323,40 @@ impl Loader {
                 vn.push(normal.z);
             }
 
-            meshes.push(Mesh::new(vertices, indices, vt, vn));
+            let mesh = js_sys::Object::new();
+
+            js_sys::Reflect::set(
+                &mesh,
+                &"vertices".into(),
+                &js_sys::Float32Array::from(&vertices[..]),
+            );
+            js_sys::Reflect::set(
+                &mesh,
+                &"indices".into(),
+                &js_sys::Uint32Array::from(&indices[..]),
+            );
+            js_sys::Reflect::set(&mesh, &"vt".into(), &js_sys::Float32Array::from(&vt[..]));
+            js_sys::Reflect::set(&mesh, &"vn".into(), &js_sys::Float32Array::from(&vn[..]));
+            js_sys::Reflect::set(&mesh, &"mtl".into(), &js_sys::Float32Array::from(&vn[..]));
+            js_sys::Reflect::set(
+                &mesh,
+                &"usemtl".into(),
+                &object.borrow().usemtl.clone().into(),
+            );
+
+            meshes.push(&mesh);
         }
 
         meshes
+    }
+
+    pub fn getMtlLib(&self) -> js_sys::Array {
+        let arr = js_sys::Array::new();
+
+        for mtlPath in &self.mtllib {
+            arr.push(&mtlPath.into());
+        }
+
+        arr
     }
 }

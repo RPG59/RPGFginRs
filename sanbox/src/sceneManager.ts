@@ -19,9 +19,10 @@ import { LineGenerator } from "./lineGenerator";
 import { vec3 } from "../../RPGFgin/src/math/vec3";
 import { CubeMapObject } from "./cubeMapObject";
 import { CubeTexture } from "../../RPGFgin/src/core/cubeTexture";
+import { Mesh, TextureTypes } from "../../RPGFgin/src/core/mesh";
+import { FileLoader } from "../../RPGFgin/src/loaders/fileLoader";
+import { MTLParser } from "../../RPGFgin/src/loaders/mtlParser";
 import { Texture } from "../../RPGFgin/src/core/texture";
-import { TextureTypes } from "../../RPGFgin/src/core/mesh";
-import { gl } from "../../RPGFgin/src/main";
 
 export class SceneManager {
   scene: Scene;
@@ -41,13 +42,64 @@ export class SceneManager {
   }
 
   async loadWorldGeometry(shader: Shader) {
-    const objTextData = await fetch("LP1.obj").then((x) => x.text());
-    const loader = new ObjLoader(objTextData);
+    const _DEBUG = true;
 
-    await loader.loadMtl();
 
-    const meshes = await loader.getMeshes();
+    if (_DEBUG) {
+      const objTextData = await fetch("LP1.obj").then((x) => x.arrayBuffer());
+      console.time('t');
+      // @ts-ignore
+      const loaderData = window._globalWasm.foo(new Uint8Array(objTextData));
+      // @ts-ignore
+      const mtllib: any[] = await new Promise((res) => {
+        const files = loaderData.mtlData.map((mtlPath) =>
+          new FileLoader(mtlPath, "text").load()
+        );
 
+        // @ts-ignore
+        Promise.all(files).then((mtlFilesData) => {
+          // @ts-ignore
+          res(mtlFilesData.reduce(
+
+            // @ts-ignore
+            (r, x) => r.concat(new MTLParser(x).materials),
+            []
+          ));
+        });
+      });
+
+      const promises = [];
+
+      // @ts-ignore
+      const meshes = loaderData.meshes.map(({ vertices, indices, vt, vn, usemtl }) => {
+        const mtl = mtllib.find((x) => x.name === usemtl);
+        const textures = [];
+
+        if (mtl && mtl.map_Ka) {
+          const texture = new Texture(TextureTypes.DIFFUSE);
+          promises.push(texture.create(mtl.map_Ka));
+          textures.push(texture);
+        }
+
+        return new Mesh(vertices, indices, vt, vn, textures);
+      });
+
+      await Promise.all(promises);
+    } else {
+
+      const objTextData = await fetch("LP1.obj").then((x) => x.text());
+      console.time('t');
+      const loader = new ObjLoader(objTextData);
+
+      await loader.loadMtl();
+
+      const meshes = await loader.getMeshes();
+    }
+
+
+    console.timeEnd('t');
+
+    // @ts-ignore
     this.scene.push(new RenderableObject(meshes, new Material(shader)));
   }
 
@@ -74,6 +126,7 @@ export class SceneManager {
         this.scene.renderableObjects,
         this.camera
       );
+
 
       if (!intersections.length) {
         return;
